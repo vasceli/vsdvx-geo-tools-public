@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Готовые задачи · VSDVX Backlog{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Готовые задачи</h1>
+        <p>Завершённые работы и их результаты.</p>
+    </div>
+</div>
+
+<form method="get" class="done-filters">
+    <div class="done-filter-search">
+        <label for="done-q">Поиск</label>
+        <input
+            id="done-q"
+            type="search"
+            name="q"
+            value="{{ query }}"
+            placeholder="Задача, клиент, результат..."
+        >
+    </div>
+
+    <div>
+        <label for="done-assignee">Исполнитель</label>
+        <select id="done-assignee" name="assignee">
+            <option value="">Все</option>
+            {% for employee in employees %}
+                <option value="{{ employee.id }}"
+                    {% if selected_assignee == employee.id|stringformat:"s" %}selected{% endif %}>
+                    {{ employee }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="done-direction">Направление</label>
+        <select id="done-direction" name="direction">
+            <option value="">Все</option>
+            {% for item in directions %}
+                <option value="{{ item }}"
+                    {% if selected_direction == item %}selected{% endif %}>
+                    {{ item }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="done-priority">Приоритет</label>
+        <select id="done-priority" name="priority">
+            <option value="">Все</option>
+            {% for value, label in priorities %}
+                <option value="{{ value }}"
+                    {% if selected_priority == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="done-from">Завершено с</label>
+        <input
+            id="done-from"
+            type="date"
+            name="completed_from"
+            value="{{ selected_completed_from }}"
+        >
+    </div>
+
+    <div>
+        <label for="done-to">по</label>
+        <input
+            id="done-to"
+            type="date"
+            name="completed_to"
+            value="{{ selected_completed_to }}"
+        >
+    </div>
+
+    <div class="done-filter-actions">
+        <button type="submit">Применить</button>
+        <a class="filter-reset" href="{% url 'done_tasks' %}">Сбросить</a>
+    </div>
+</form>
+
+<div class="done-list">
+    {% for task in tasks %}
+        <article class="done-card priority-{{ task.priority }}">
+            <div class="done-card-head">
+                <div>
+                    <div class="task-code">{{ task.code }}</div>
+                    <a class="done-title"
+                       href="{% url 'task_detail' task.pk %}">
+                        {{ task.title }}
+                    </a>
+                </div>
+
+                <div class="done-completed">
+                    {% if task.completed_at %}
+                        <strong>{{ task.completed_at|date:"d.m.Y" }}</strong>
+                        <span>{{ task.completed_at|date:"H:i" }}</span>
+                    {% else %}
+                        <span>дата не указана</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="done-meta">
+                {% if task.assignee %}
+                    {{ task.assignee }}
+                {% else %}
+                    без исполнителя
+                {% endif %}
+
+                {% if task.direction %}
+                    · {{ task.direction }}
+                {% endif %}
+
+                · {{ task.get_priority_display }}
+            </div>
+
+            <div class="done-duration">
+                <span>
+                    <strong>Общий срок:</strong>
+                    {{ task.total_duration_display|default:"—" }}
+                </span>
+
+                <span>
+                    <strong>В работе:</strong>
+                    {{ task.work_duration_display|default:"—" }}
+                </span>
+            </div>
+
+            {% if task.completion_comment %}
+                <div class="done-result">
+                    <strong>Результат:</strong>
+                    {{ task.completion_comment|linebreaksbr }}
+                </div>
+            {% else %}
+                <div class="done-result done-result-empty">
+                    Результат не указан.
+                </div>
+            {% endif %}
+
+            <div class="done-links">
+                <a href="{% url 'task_detail' task.pk %}">
+                    Открыть задачу
+                </a>
+
+                {% if task.completion_url %}
+                    <a href="{{ task.completion_url }}"
+                       target="_blank"
+                       rel="noopener noreferrer">
+                        Открыть результат ↗
+                    </a>
+                {% endif %}
+            </div>
+        </article>
+    {% empty %}
+        <div class="empty">
+            Готовых задач по этим фильтрам не найдено.
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

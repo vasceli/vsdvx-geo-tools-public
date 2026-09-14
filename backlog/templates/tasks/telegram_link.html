@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Telegram · VSDVX Backlog{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Привязка Telegram</h1>
+    </div>
+</div>
+
+<div class="card">
+    {% if linked %}
+        <h2>Telegram привязан</h2>
+
+        <p>
+            Учётная запись Telegram успешно связана
+            с сотрудником
+            <strong>
+                {{ employee.display_name|default:employee.username }}
+            </strong>.
+        </p>
+
+        <p>
+            Теперь бот сможет присылать уведомления
+            по вашим задачам.
+        </p>
+
+        <a href="/" class="button">
+            Вернуться в Backlog
+        </a>
+    {% else %}
+        <h2>Подтвердите привязку</h2>
+
+        <p>
+            Telegram будет связан с сотрудником:
+        </p>
+
+        <p>
+            <strong>
+                {{ employee.display_name|default:employee.username }}
+            </strong>
+        </p>
+
+        <p class="muted">
+            Если это не вы, ничего не подтверждайте.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <button type="submit" class="button">
+                Подтвердить привязку
+            </button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

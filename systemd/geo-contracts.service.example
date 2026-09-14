@@ -1,0 +1,17 @@
+[Unit]
+Description=Example GEO Tools contract service
+After=network-online.target
+
+[Service]
+User=geoapps
+Group=geoapps
+WorkingDirectory=/opt/example-geo-tools/contracts
+EnvironmentFile=/etc/example-geo-tools.env
+ExecStart=/opt/example-geo-tools/contracts/.venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8765
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

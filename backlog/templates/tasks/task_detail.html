@@ -1,0 +1,605 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.code }} — {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div class="muted">{{ task.code }}</div>
+        <h1>{{ task.title }}</h1>
+
+        <div class="task-actions">
+            <a href="/tasks/{{ task.pk }}/edit/" class="button">
+                Редактировать
+            </a>
+
+            {% if can_complete %}
+                <button
+                    type="button"
+                    class="button complete-button"
+                    onclick="document.getElementById('completion-dialog').showModal()"
+                >
+                    ✓ Завершить задачу
+                </button>
+            {% endif %}
+
+            {% if can_reopen %}
+                <button
+                    type="button"
+                    class="button"
+                    onclick="document.getElementById('reopen-dialog').showModal()"
+                >
+                    ↻ Повторно открыть
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Задача</h2>
+
+    <dl>
+        <dt>Статус</dt>
+        <dd>{{ task.get_status_display }}</dd>
+
+        <dt>Приоритет</dt>
+        <dd>{{ task.get_priority_display }}</dd>
+
+        <dt>Исполнитель</dt>
+        <dd>
+            {% if task.assignee %}
+                {{ task.assignee.display_name|default:task.assignee.username }}
+            {% else %}
+                Не назначен
+            {% endif %}
+        </dd>
+
+        <dt>Кто поставил</dt>
+        <dd>{{ task.reporter|default:"—" }}</dd>
+
+        <dt>Направление</dt>
+        <dd>{{ task.direction|default:"—" }}</dd>
+
+        <dt>Срок</dt>
+        <dd{% if task.is_overdue %} class="deadline-detail-overdue"{% endif %}>
+            {% if task.due_at %}
+                {{ task.due_at|date:"d.m.Y H:i" }}
+
+                {% if task.is_overdue %}
+                    <span class="overdue-detail-label">
+                        {{ task.overdue_display }}
+                    </span>
+                {% endif %}
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Оценка</dt>
+        <dd>
+            {% if task.estimate_hours %}
+                {{ task.estimate_hours }} ч
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Создано</dt>
+        <dd>{{ task.created_at|date:"d.m.Y H:i" }}</dd>
+
+        <dt>Взята в работу</dt>
+        <dd>
+            {% if task.started_at %}
+                {{ task.started_at|date:"d.m.Y H:i" }}
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        {% if task.completed_at %}
+            <dt>Общий срок</dt>
+            <dd>
+                {{ task.total_duration_display|default:"—" }}
+            </dd>
+
+            <dt>В работе</dt>
+            <dd>
+                {{ task.work_duration_display|default:"—" }}
+            </dd>
+        {% endif %}
+
+        <dt>Обновлено</dt>
+        <dd>{{ task.updated_at|date:"d.m.Y H:i" }}</dd>
+    </dl>
+</div>
+
+<div class="card task-watchers-card">
+    <div class="watchers-header">
+        <div>
+            <h2>Наблюдатели</h2>
+            <div class="muted">
+                Получают уведомления об изменениях этой задачи
+            </div>
+        </div>
+
+        <form
+            method="post"
+            action="{% url 'task_watcher_toggle' task.pk %}"
+        >
+            {% csrf_token %}
+
+            {% if is_watching %}
+                <button
+                    type="submit"
+                    class="button watcher-toggle-button"
+                >
+                    ✓ Наблюдаю
+                </button>
+            {% else %}
+                <button
+                    type="submit"
+                    class="button"
+                >
+                    + Наблюдать
+                </button>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if watcher_links %}
+        <div class="watchers-list">
+            {% for item in watcher_links %}
+                <div class="watcher-item">
+                    <div class="watcher-person">
+                        <strong>
+                            {{ item.employee.display_name|default:item.employee.username }}
+                        </strong>
+
+                        {% if item.employee.pk == request.employee.pk %}
+                            <span class="watcher-self">
+                                Вы
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    {% if request.employee.can_manage_tasks %}
+                        <form
+                            method="post"
+                            action="{% url 'task_watcher_manage' task.pk %}"
+                            class="watcher-remove-form"
+                        >
+                            {% csrf_token %}
+
+                            <input
+                                type="hidden"
+                                name="employee_id"
+                                value="{{ item.employee.pk }}"
+                            >
+
+                            <input
+                                type="hidden"
+                                name="action"
+                                value="remove"
+                            >
+
+                            <button
+                                type="submit"
+                                class="watcher-remove-button"
+                                title="Убрать наблюдателя"
+                            >
+                                ×
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="watchers-empty">
+            Пока никто не наблюдает за задачей.
+        </div>
+    {% endif %}
+
+    {% if request.employee.can_manage_tasks %}
+        {% if available_watchers %}
+            <form
+                method="post"
+                action="{% url 'task_watcher_manage' task.pk %}"
+                class="watcher-add-form"
+            >
+                {% csrf_token %}
+
+                <input
+                    type="hidden"
+                    name="action"
+                    value="add"
+                >
+
+                <label for="watcher-employee">
+                    Добавить наблюдателя
+                </label>
+
+                <div class="watcher-add-controls">
+                    <select
+                        id="watcher-employee"
+                        name="employee_id"
+                        required
+                    >
+                        <option value="">
+                            Выберите сотрудника
+                        </option>
+
+                        {% for employee in available_watchers %}
+                            <option value="{{ employee.pk }}">
+                                {{ employee.display_name|default:employee.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                    <button
+                        type="submit"
+                        class="button"
+                    >
+                        Добавить
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% if task.acceptance_criteria %}
+<div class="card">
+    <h2>Результат / критерий готовности</h2>
+    <div>{{ task.acceptance_criteria|linebreaksbr }}</div>
+</div>
+{% endif %}
+
+{% if task.blockers %}
+<div class="card">
+    <h2>Зависимости / блокеры</h2>
+    <div>{{ task.blockers|linebreaksbr }}</div>
+</div>
+{% endif %}
+
+{% if task.next_step %}
+<div class="card">
+    <h2>Следующий шаг</h2>
+    <div>{{ task.next_step|linebreaksbr }}</div>
+</div>
+{% endif %}
+
+{% if task.materials_url %}
+<div class="card">
+    <h2>Материалы</h2>
+    <a
+        href="{{ task.materials_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+    >
+        {{ task.materials_url }}
+    </a>
+</div>
+{% endif %}
+
+<div class="card task-comments-card">
+    <div class="comments-header">
+        <div>
+            <h2>Обсуждение</h2>
+            <div class="muted">
+                Комментарии сотрудников по задаче
+            </div>
+        </div>
+
+        <div class="comments-count">
+            {{ comments|length }}
+        </div>
+    </div>
+
+    <div class="comments-feed">
+        {% if task.comment %}
+            <div class="task-comment legacy-comment">
+                <div class="comment-meta">
+                    <strong>Старый комментарий</strong>
+                    <span>· автор и время ранее не фиксировались</span>
+                </div>
+
+                <div class="comment-body">
+                    {{ task.comment|linebreaksbr }}
+                </div>
+            </div>
+        {% endif %}
+
+        {% for item in comments %}
+            <div class="task-comment">
+                <div class="comment-meta">
+                    <strong>
+                        {{ item.author.display_name|default:item.author.username }}
+                    </strong>
+
+                    <span>
+                        · {{ item.created_at|date:"d.m.Y H:i" }}
+                    </span>
+                </div>
+
+                <div class="comment-body">
+                    {{ item.body|linebreaksbr }}
+                </div>
+            </div>
+        {% empty %}
+            {% if not task.comment %}
+                <div class="comments-empty">
+                    Комментариев пока нет.
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <form
+        method="post"
+        action="{% url 'task_comment_add' task.pk %}"
+        class="comment-form"
+    >
+        {% csrf_token %}
+
+        <div class="form-field">
+            <label for="{{ comment_form.body.id_for_label }}">
+                Новый комментарий
+            </label>
+
+            {{ comment_form.body }}
+
+            {% for error in comment_form.body.errors %}
+                <div class="form-error">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="comment-form-actions">
+            <button
+                type="submit"
+                class="button"
+            >
+                Отправить
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if task.completed_at or task.completion_comment or task.completion_url %}
+<div class="card completion-result">
+    {% if task.completed_at %}
+        <h2>Результат завершения</h2>
+    {% else %}
+        <h2>Предыдущий результат завершения</h2>
+
+        <p class="muted">
+            Задача была повторно открыта.
+            Результат прошлого завершения сохранён.
+        </p>
+    {% endif %}
+
+    {% if task.completed_at %}
+        <p>
+            <strong>Статус:</strong>
+            {{ task.get_status_display }}
+        </p>
+
+        <p>
+            <strong>Завершено:</strong>
+            {{ task.completed_at|date:"d.m.Y H:i" }}
+        </p>
+    {% endif %}
+
+    <div>
+        {{ task.completion_comment|linebreaksbr }}
+    </div>
+
+    {% if task.completion_url %}
+        <p>
+            <a
+                href="{{ task.completion_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                Открыть результат ↗
+            </a>
+        </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>История изменений</h2>
+
+    {% if history %}
+        {% for item in history %}
+            <p>
+                <strong>{{ item.created_at|date:"d.m.Y H:i" }}</strong>
+                {% if item.actor %}
+                    · {{ item.actor.display_name|default:item.actor.username }}
+                {% endif %}
+                · {{ item.field_name }}
+
+                {% if item.old_value or item.new_value %}
+                    · {{ item.old_value|default:"—" }}
+                    →
+                    {{ item.new_value|default:"—" }}
+                {% endif %}
+            </p>
+        {% endfor %}
+    {% else %}
+        <p class="muted">Изменений пока нет.</p>
+    {% endif %}
+</div>
+
+<p>
+    <a href="/tasks/">← Все задачи</a>
+</p>
+
+{% if can_complete %}
+<dialog id="completion-dialog" class="completion-dialog">
+    <form
+        method="post"
+        action="{% url 'task_complete' task.pk %}"
+        class="completion-form"
+    >
+        {% csrf_token %}
+
+        <div class="dialog-header">
+            <div>
+                <div class="muted">{{ task.code }}</div>
+                <h2>Завершить задачу</h2>
+            </div>
+
+            <button
+                type="button"
+                class="dialog-close"
+                onclick="document.getElementById('completion-dialog').close()"
+                aria-label="Закрыть"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="form-field">
+            <label for="{{ completion_form.status.id_for_label }}">
+                {{ completion_form.status.label }}
+            </label>
+
+            {{ completion_form.status }}
+
+            {% for error in completion_form.status.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ completion_form.result.id_for_label }}">
+                {{ completion_form.result.label }}
+            </label>
+
+            {{ completion_form.result }}
+
+            {% for error in completion_form.result.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="form-field">
+            <label for="{{ completion_form.result_url.id_for_label }}">
+                {{ completion_form.result_url.label }}
+            </label>
+
+            {{ completion_form.result_url }}
+
+            <div class="muted">
+                Google Drive, Яндекс Диск или другая внешняя HTTPS-ссылка.
+                Файлы на сервер не загружаются.
+            </div>
+
+            {% for error in completion_form.result_url.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                type="button"
+                class="button"
+                onclick="document.getElementById('completion-dialog').close()"
+            >
+                Отмена
+            </button>
+
+            <button type="submit" class="button complete-button">
+                ✓ Завершить задачу
+            </button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
+
+
+{% if can_reopen %}
+<dialog id="reopen-dialog" class="completion-dialog">
+    <form
+        method="post"
+        action="{% url 'task_reopen' task.pk %}"
+        class="completion-form"
+    >
+        {% csrf_token %}
+
+        <div class="dialog-header">
+            <div>
+                <div class="muted">{{ task.code }}</div>
+                <h2>Повторно открыть задачу</h2>
+            </div>
+
+            <button
+                type="button"
+                class="dialog-close"
+                onclick="document.getElementById('reopen-dialog').close()"
+                aria-label="Закрыть"
+            >
+                ×
+            </button>
+        </div>
+
+        <p>
+            Задача останется той же.
+            Новый дубль создаваться не будет.
+        </p>
+
+        <p class="muted">
+            Результат предыдущего завершения сохранится
+            в задаче и истории изменений.
+        </p>
+
+        <div class="form-field">
+            <label for="{{ reopen_form.status.id_for_label }}">
+                {{ reopen_form.status.label }}
+            </label>
+
+            {{ reopen_form.status }}
+
+            {% for error in reopen_form.status.errors %}
+                <div class="form-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                type="button"
+                class="button"
+                onclick="document.getElementById('reopen-dialog').close()"
+            >
+                Отмена
+            </button>
+
+            <button type="submit" class="button">
+                ↻ Открыть заново
+            </button>
+        </div>
+    </form>
+</dialog>
+{% endif %}
+
+{% if open_reopen_dialog %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("reopen-dialog").showModal();
+});
+</script>
+{% endif %}
+
+{% if open_completion_dialog %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("completion-dialog").showModal();
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Генератор договоров</title>
+  <link rel="stylesheet" href="static/style.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Генератор договора</h1>
+      <p>3 / 6 / 12 месяцев. 18 месяцев намеренно отключен.</p>
+    </header>
+
+    <section class="card">
+      <h2>1. Договор</h2>
+      <div class="grid">
+        <label>Номер договора
+          <input id="contract_number" placeholder="DEMO-001" />
+        </label>
+        <label>Дата договора
+          <input id="contract_date" type="date" />
+        </label>
+        <label>Срок
+          <select id="months">
+            <option value="3">3 месяца</option>
+            <option value="6" selected>6 месяцев</option>
+            <option value="12">12 месяцев</option>
+          </select>
+        </label>
+        <label>Итоговая сумма, ₽
+          <input id="total_price" type="number" value="120000" min="1" />
+        </label>
+        <label>Репутация, ₽ <span class="hint">можно оставить пустым — возьмется из пакета</span>
+          <input id="reputation_total" type="number" placeholder="авто" min="0" />
+        </label>
+        <label class="checkbox-row wide">
+          <input id="include_reputation" type="checkbox" checked />
+          <span>Включить репутацию в договор</span>
+        </label>
+        <label>НДС
+          <select id="vat_mode">
+            <option value="vat_5" selected>в том числе НДС 5%</option>
+            <option value="usn">УСН, без НДС</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Реквизиты клиента</h2>
+      <div class="inline">
+        <input id="requisites_file" type="file" accept=".pdf,.docx,.txt,.xlsx,.xlsm" />
+        <button id="parse_requisites_btn" type="button">Распарсить файл</button>
+      </div>
+      <div id="parse_status" class="status"></div>
+      <div class="grid">
+        <label>Юр. название
+          <textarea id="customer_legal_name" rows="2" placeholder="ООО «Демо Клиника»"></textarea>
+        </label>
+        <label>Должность представителя
+          <input id="customer_director_position" value="генерального директора" />
+        </label>
+        <label>ФИО представителя
+          <input id="customer_long_name" placeholder="Иванов Иван Иванович" />
+        </label>
+        <label>Основание
+          <input id="customer_basis" value="Устава" />
+        </label>
+        <label>ИНН
+          <input id="customer_inn" placeholder="0000000000" />
+        </label>
+        <label>КПП
+          <input id="customer_kpp" />
+        </label>
+        <label>ОГРН
+          <input id="customer_ogrn" placeholder="0000000000000" />
+        </label>
+        <label>Подпись коротко
+          <input id="customer_short_sign" placeholder="И. И. Иванов" />
+        </label>
+        <label class="wide">Юридический адрес
+          <textarea id="customer_legal_address" rows="2" placeholder="г. Москва, ул. Примерная, 1"></textarea>
+        </label>
+        <label>Расчетный счет
+          <input id="customer_rs" placeholder="00000000000000000000" />
+        </label>
+        <label>Банк
+          <input id="customer_bank" placeholder="Демо Банк" />
+        </label>
+        <label>Адрес банка
+          <input id="customer_bank_address" />
+        </label>
+        <label>БИК
+          <input id="customer_bik" placeholder="000000000" />
+        </label>
+        <label>Кор. счет
+          <input id="customer_ks" placeholder="00000000000000000000" />
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. Филиал из Яндекс.Карт</h2>
+      <div class="inline">
+        <input id="maps_link" placeholder="https://yandex.ru/profile/00000000000" />
+        <button id="parse_map_btn" type="button">Попробовать распарсить</button>
+      </div>
+      <div id="map_status" class="status"></div>
+      <div class="grid">
+        <label>Название филиала
+          <input id="org_name" placeholder="Demo Dental Clinic" />
+        </label>
+        <label class="wide">Адрес филиала
+          <input id="org_address" placeholder="г. Москва, ул. Примерная, 1" />
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. Оплаты</h2>
+      <p class="hint">Необязательно. Если договор одной оплатой — оставь пустым.</p>
+      <div class="grid">
+        <label>Первая часть — дата
+          <input id="pay1_date" placeholder="13.03.2026" />
+        </label>
+        <label>Первая часть — сумма
+          <input id="pay1_amount" placeholder="200 000" />
+        </label>
+        <label>Вторая часть — дата
+          <input id="pay2_date" placeholder="29.04.2026" />
+        </label>
+        <label>Вторая часть — сумма
+          <input id="pay2_amount" placeholder="200 000" />
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. Расчет таблицы</h2>
+      <div class="actions">
+        <button id="calculate_btn" type="button">Пересчитать таблицу</button>
+        <button id="preview_btn" type="button">Открыть HTML-превью</button>
+        <button id="docx_btn" type="button">Скачать DOCX</button>
+        <button id="pdf_btn" type="button">Скачать PDF</button>
+      </div>
+      <div id="validation" class="status"></div>
+      <table id="services_table">
+        <colgroup><col class="col-no"><col><col class="col-amount"></colgroup>
+        <thead><tr><th>№</th><th>Услуга</th><th>Сумма</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+:root { font-family: Arial, sans-serif; color: #171717; background: #f5f5f5; }
+body { margin: 0; }
+main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+header { margin-bottom: 20px; }
+h1 { margin: 0 0 6px; }
+h2 { margin: 0 0 16px; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 18px; margin: 16px 0; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(240px, 1fr)); gap: 14px; }
+label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+input, textarea, select { font: inherit; padding: 9px 10px; border: 1px solid #bbb; border-radius: 7px; background: #fff; }
+textarea { resize: vertical; }
+.wide { grid-column: 1 / -1; }
+.inline { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+.inline input { flex: 1; }
+button { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 14px; background: #1f2937; color: #fff; font-weight: 700; }
+button:hover { background: #111827; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.hint { color: #666; font-size: 13px; font-weight: 400; }
+.status { margin: 8px 0; color: #333; white-space: pre-wrap; }
+.status.error { color: #a40000; }
+.status.ok { color: #136d25; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: 8px; vertical-align: top; }
+th { background: #eee; }
+tr.section td { font-weight: 700; background: #fafafa; }
+tr.total td { font-weight: 700; background: #e9ecef; }
+#services_table .col-no { width: 34px; }
+#services_table .col-amount { width: 180px; }
+#services_table th:first-child, #services_table td:first-child { text-align: center; white-space: nowrap; }
+#services_table th:last-child, #services_table td:last-child { white-space: nowrap; }
+
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .inline { flex-direction: column; align-items: stretch; } }
+
+.checkbox-row { flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
+.checkbox-row input { width: 18px; height: 18px; }

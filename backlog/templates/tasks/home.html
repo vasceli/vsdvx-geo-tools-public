@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Мои задачи · VSDVX Backlog{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Мои задачи</h1>
+        <p>Текущая очередь работы.</p>
+    </div>
+</div>
+
+<div class="saved-filters">
+    <div class="saved-filters-head">
+        <strong>Сохранённые фильтры</strong>
+    </div>
+
+    <div class="saved-filter-list">
+        {% for saved_filter in saved_filters %}
+            <div class="saved-filter-chip">
+                <a href="{% url 'saved_filter_apply' saved_filter.pk %}">
+                    {{ saved_filter.name }}
+                </a>
+
+                <form
+                    method="post"
+                    action="{% url 'saved_filter_delete' saved_filter.pk %}"
+                >
+                    {% csrf_token %}
+                    <button
+                        type="submit"
+                        class="saved-filter-delete"
+                        title="Удалить фильтр"
+                        aria-label="Удалить фильтр {{ saved_filter.name }}"
+                    >
+                        ×
+                    </button>
+                </form>
+            </div>
+        {% empty %}
+            <span class="saved-filter-empty">
+                Пока нет сохранённых фильтров
+            </span>
+        {% endfor %}
+    </div>
+
+    {% if filters_active %}
+        <form
+            method="post"
+            action="{% url 'saved_filter_create' %}"
+            class="saved-filter-save"
+        >
+            {% csrf_token %}
+
+            <input type="hidden" name="scope" value="my">
+
+            {% if query %}
+                <input type="hidden" name="q" value="{{ query }}">
+            {% endif %}
+
+            {% if selected_status %}
+                <input
+                    type="hidden"
+                    name="status"
+                    value="{{ selected_status }}"
+                >
+            {% endif %}
+
+            {% if selected_priority %}
+                <input
+                    type="hidden"
+                    name="priority"
+                    value="{{ selected_priority }}"
+                >
+            {% endif %}
+
+            {% if selected_direction %}
+                <input
+                    type="hidden"
+                    name="direction"
+                    value="{{ selected_direction }}"
+                >
+            {% endif %}
+
+            {% if selected_overdue == "1" %}
+                <input type="hidden" name="overdue" value="1">
+            {% endif %}
+
+            {% if selected_hide_review == "1" %}
+                <input type="hidden" name="hide_review" value="1">
+            {% endif %}
+
+            {% if selected_sort != "priority" %}
+                <input
+                    type="hidden"
+                    name="sort"
+                    value="{{ selected_sort }}"
+                >
+            {% endif %}
+
+            <input
+                type="text"
+                name="name"
+                maxlength="100"
+                required
+                placeholder="Название фильтра"
+                aria-label="Название сохранённого фильтра"
+            >
+
+            <button type="submit" class="button">
+                Сохранить текущий
+            </button>
+        </form>
+    {% endif %}
+</div>
+
+<form method="get" class="task-filters">
+    <div class="task-filter-search">
+        <label for="task-search">Поиск</label>
+        <input
+            id="task-search"
+            type="search"
+            name="q"
+            value="{{ query }}"
+            placeholder="TASK-009, My Clinic, направление..."
+        >
+    </div>
+
+    <div>
+        <label for="filter-status">Статус</label>
+        <select id="filter-status" name="status">
+            <option value="">Все статусы</option>
+            {% for value, label in statuses %}
+                <option value="{{ value }}"
+                    {% if selected_status == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="filter-priority">Приоритет</label>
+        <select id="filter-priority" name="priority">
+            <option value="">Все приоритеты</option>
+            {% for value, label in priorities %}
+                <option value="{{ value }}"
+                    {% if selected_priority == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="filter-direction">Направление</label>
+        <select id="filter-direction" name="direction">
+            <option value="">Все направления</option>
+            {% for value in directions %}
+                <option value="{{ value }}"
+                    {% if selected_direction == value %}selected{% endif %}>
+                    {{ value }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div>
+        <label for="filter-sort">Сортировка</label>
+        <select id="filter-sort" name="sort">
+            <option value="priority"
+                {% if selected_sort == "priority" %}selected{% endif %}>
+                По приоритету
+            </option>
+            <option value="due"
+                {% if selected_sort == "due" %}selected{% endif %}>
+                По сроку
+            </option>
+            <option value="updated"
+                {% if selected_sort == "updated" %}selected{% endif %}>
+                Недавно обновлённые
+            </option>
+            <option value="created"
+                {% if selected_sort == "created" %}selected{% endif %}>
+                Недавно созданные
+            </option>
+            <option value="title"
+                {% if selected_sort == "title" %}selected{% endif %}>
+                По названию
+            </option>
+        </select>
+    </div>
+
+    <label class="overdue-filter">
+        <input
+            type="checkbox"
+            name="overdue"
+            value="1"
+            {% if selected_overdue == "1" %}checked{% endif %}
+        >
+        Только просроченные
+    </label>
+
+    <label class="overdue-filter">
+        <input
+            type="checkbox"
+            name="hide_review"
+            value="1"
+            {% if selected_hide_review == "1" %}checked{% endif %}
+        >
+        Скрыть задачи на проверке
+    </label>
+
+    <div class="task-filter-actions">
+        <button type="submit" class="button">Применить</button>
+
+        {% if filters_active %}
+            <a href="/" class="button filter-reset">Сбросить</a>
+        {% endif %}
+    </div>
+</form>
+
+<div class="task-list">
+    {% for task in tasks %}
+        <article class="task-card priority-{{ task.priority }}{% if task.is_overdue %} task-overdue{% endif %}">
+            <a
+                class="task-card-content"
+                href="{% url 'task_detail' task.pk %}"
+            >
+                <div class="task-code">{{ task.code }}</div>
+
+                <div class="task-main">
+                    <strong>{{ task.title }}</strong>
+
+                    <div class="meta">
+                        {{ task.get_status_display }}
+
+                        {% if task.due_at %}
+                            {% if task.is_overdue %}
+                                · <span class="deadline-overdue">
+                                    до {{ task.due_at|date:"d.m.Y H:i" }}
+                                </span>
+
+                                <span class="overdue-label">
+                                    {{ task.overdue_display }}
+                                </span>
+                            {% else %}
+                                · до {{ task.due_at|date:"d.m.Y H:i" }}
+                            {% endif %}
+                        {% endif %}
+
+                        {% if task.direction %}
+                            · {{ task.direction }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="priority">
+                    {{ task.get_priority_display }}
+                </div>
+            </a>
+
+            <div class="quick-actions">
+                {% if task.status != "in_progress" %}
+                    <form
+                        method="post"
+                        action="{% url 'task_quick_status' task.pk %}"
+                        class="quick-action-form"
+                    >
+                        {% csrf_token %}
+                        <input
+                            type="hidden"
+                            name="status"
+                            value="in_progress"
+                        >
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+                        <button
+                            type="submit"
+                            class="quick-action-button"
+                        >
+                            В работу
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if task.status == "in_progress" or task.status == "blocked" %}
+                    <form
+                        method="post"
+                        action="{% url 'task_quick_status' task.pk %}"
+                        class="quick-action-form"
+                    >
+                        {% csrf_token %}
+                        <input
+                            type="hidden"
+                            name="status"
+                            value="review"
+                        >
+                        <input
+                            type="hidden"
+                            name="next"
+                            value="{{ request.get_full_path }}"
+                        >
+                        <button
+                            type="submit"
+                            class="quick-action-button"
+                        >
+                            На проверку
+                        </button>
+                    </form>
+                {% endif %}
+
+                <a
+                    class="quick-action-button quick-action-complete"
+                    href="{% url 'task_detail' task.pk %}?complete=1"
+                >
+                    Завершить
+                </a>
+            </div>
+        </article>
+    {% empty %}
+        <div class="empty">
+            {% if filters_active %}
+                По выбранным фильтрам задач нет.
+            {% else %}
+                Открытых задач нет.
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}VSDVX Backlog{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'tasks/app.css' %}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">VSDVX Backlog</a>
+
+    <nav>
+        <a href="/">Мои задачи</a>
+        <a href="/tasks/">Все задачи</a>
+        <a href="/tasks/done/">Готовые</a>
+
+        {% if request.employee.can_manage_tasks %}
+            <a href="/dashboard/">Дашборд</a>
+            <a href="/tasks/waiting/">Ожидают оценки</a>
+        {% endif %}
+
+        <a class="primary" href="/tasks/new/">+ Задача</a>
+    <a href="/logout/" class="logout-link">Выйти</a>
+        </nav>
+
+    <div class="user">
+        {{ request.employee.display_name|default:request.employee.username }}
+        {% if request.employee.is_system_admin %}
+            <span class="role">администратор</span>
+        {% elif request.employee.is_manager %}
+            <span class="role">руководитель</span>
+        {% endif %}
+    </div>
+</header>
+
+<main class="container">
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Дашборд · VSDVX Backlog{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Дашборд сотрудников</h1>
+        <p>
+            Текущая загрузка команды и результаты работы.
+        </p>
+    </div>
+
+    <div class="dashboard-updated">
+        Обновлено {{ generated_at|date:"d.m.Y H:i" }}
+    </div>
+</div>
+
+<div class="dashboard-summary">
+    <div class="dashboard-card">
+        <span class="dashboard-card-label">Всего задач</span>
+        <strong class="dashboard-card-value">{{ team.total }}</strong>
+    </div>
+
+    <div class="dashboard-card">
+        <span class="dashboard-card-label">Открыто</span>
+        <strong class="dashboard-card-value">{{ team.open }}</strong>
+    </div>
+
+    <div class="dashboard-card">
+        <span class="dashboard-card-label">В работе</span>
+        <strong class="dashboard-card-value">{{ team.in_progress }}</strong>
+    </div>
+
+    <div class="dashboard-card">
+        <span class="dashboard-card-label">На проверке</span>
+        <strong class="dashboard-card-value">{{ team.review }}</strong>
+    </div>
+
+    <div class="dashboard-card{% if team.overdue %} dashboard-card-danger{% endif %}">
+        <span class="dashboard-card-label">Просрочено</span>
+        <strong class="dashboard-card-value">{{ team.overdue }}</strong>
+    </div>
+
+    <div class="dashboard-card{% if team.high_priority %} dashboard-card-warning{% endif %}">
+        <span class="dashboard-card-label">Открытые P0 / P1</span>
+        <strong class="dashboard-card-value">
+            {{ team.high_priority }}
+        </strong>
+    </div>
+
+    <div class="dashboard-card">
+        <span class="dashboard-card-label">Готово за 7 дней</span>
+        <strong class="dashboard-card-value">{{ team.done_7 }}</strong>
+    </div>
+
+    <div class="dashboard-card">
+        <span class="dashboard-card-label">Готово за 30 дней</span>
+        <strong class="dashboard-card-value">{{ team.done_30 }}</strong>
+    </div>
+
+    <div class="dashboard-card{% if team.unassigned %} dashboard-card-warning{% endif %}">
+        <span class="dashboard-card-label">Без исполнителя</span>
+        <strong class="dashboard-card-value">{{ team.unassigned }}</strong>
+    </div>
+</div>
+
+<section class="dashboard-section">
+    <div class="dashboard-section-head">
+        <div>
+            <h2>Сотрудники</h2>
+            <p>{{ team_members }} активных сотрудников</p>
+        </div>
+    </div>
+
+    <div class="dashboard-table-wrap">
+        <table class="dashboard-table">
+            <thead>
+                <tr>
+                    <th>Сотрудник</th>
+                    <th>Открыто</th>
+                    <th>В работе</th>
+                    <th>На проверке</th>
+                    <th>Просрочено</th>
+                    <th>P0 / P1</th>
+                    <th>Готово 7д</th>
+                    <th>Готово 30д</th>
+                    <th>Среднее время работы</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for row in employee_rows %}
+                    <tr>
+                        <td class="dashboard-person">
+                            <a href="{% url 'all_tasks' %}?assignee={{ row.employee.pk }}">
+                                {{ row.employee }}
+                            </a>
+
+                            {% if row.employee.is_manager %}
+                                <small>Руководитель</small>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ row.open }}</td>
+                        <td>{{ row.in_progress }}</td>
+                        <td>{{ row.review }}</td>
+
+                        <td{% if row.overdue %} class="dashboard-danger"{% endif %}>
+                            {{ row.overdue }}
+                        </td>
+
+                        <td{% if row.high_priority %} class="dashboard-warning"{% endif %}>
+                            {{ row.high_priority }}
+                        </td>
+
+                        <td>{{ row.done_7 }}</td>
+                        <td>{{ row.done_30 }}</td>
+
+                        <td class="dashboard-duration">
+                            {% if row.avg_work %}
+                                <strong>{{ row.avg_work }}</strong>
+                                <small>
+                                    по {{ row.avg_work_sample }} задачам
+                                </small>
+                            {% else %}
+                                <span class="dashboard-muted">
+                                    Нет данных
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="9">
+                            Активных сотрудников нет.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="dashboard-note">
+        Среднее время работы считается только по задачам,
+        начатым и завершённым с 18.08.2026.
+        Более ранние данные не учитываются.
+    </p>
+</section>
+{% endblock %}
